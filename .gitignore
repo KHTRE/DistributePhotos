@@ -3,7 +3,7 @@ log.txt
 
 # Ignore contents of Input and Output, but not the folders themselves
 Input/*
-!Input/
+!Input/.gitkeep
 
 Output/*
-!Output/
+!Output/.gitkeep
