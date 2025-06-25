@@ -1,4 +1,9 @@
-# Ignore logs, input and output folders
-Input/
-Output/
+# Ignore logs
 log.txt
+
+# Ignore contents of Input and Output, but not the folders themselves
+Input/*
+!Input/.gitkeep
+
+Output/*
+!Output/.gitkeep
