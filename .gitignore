@@ -1,0 +1,4 @@
+# Ignore logs, input and output folders
+Input/
+Output/
+log.txt
