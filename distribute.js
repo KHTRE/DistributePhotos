@@ -6,6 +6,7 @@ const ROOT = process.cwd();
 const INPUT_DIR = path.join(ROOT, 'Input');
 const OUTPUT_DIR = path.join(ROOT, 'Output');
 const LOG_FILE = path.join(ROOT, 'log.txt');
+const ERROR_LOG_FILE = path.join(ROOT, 'errorsLog.txt');
 
 // Recursively get all file paths under a directory
 async function getAllFilesRecursively(dir) {
@@ -57,11 +58,9 @@ async function generateUniqueFileNameWithComparison(dir, originalFilePath) {
 
       const candidateHash = await getFileHash(candidatePath);
       if (candidateHash === originalHash) {
-        // Same file — skip moving
-        return null;
+        return null; // Same file
       }
 
-      // Same name, different content — rename
       newName = `${base} (${index})${ext}`;
       index++;
     } catch {
@@ -76,41 +75,54 @@ async function generateUniqueFileNameWithComparison(dir, originalFilePath) {
 async function organizeFilesByModifiedDate() {
   const files = await getAllFilesRecursively(INPUT_DIR);
   const logLines = [];
+  const errorLines = [];
   let countMoved = 0;
   let countSkipped = 0;
 
   for (const inputFilePath of files) {
-    const stat = await fs.stat(inputFilePath);
-    const modifiedAt = stat.mtime;
+    try {
+      const stat = await fs.stat(inputFilePath);
+      const modifiedAt = stat.mtime;
 
-    const year = modifiedAt.getFullYear();
-    const month = String(modifiedAt.getMonth() + 1).padStart(2, '0');
-    const targetFolder = path.join(OUTPUT_DIR, `${year}-${month}`);
+      const year = modifiedAt.getFullYear();
+      const month = String(modifiedAt.getMonth() + 1).padStart(2, '0');
+      const targetFolder = path.join(OUTPUT_DIR, `${year}-${month}`);
 
-    await fs.mkdir(targetFolder, { recursive: true });
+      await fs.mkdir(targetFolder, { recursive: true });
 
-    const newFileName = await generateUniqueFileNameWithComparison(targetFolder, inputFilePath);
+      const newFileName = await generateUniqueFileNameWithComparison(targetFolder, inputFilePath);
 
-    if (newFileName === null) {
-      logLines.push(`Skipped (duplicate): ${path.relative(INPUT_DIR, inputFilePath)}`);
-      countSkipped++;
-      continue;
+      if (newFileName === null) {
+        logLines.push(`Skipped (duplicate): ${path.relative(INPUT_DIR, inputFilePath)}`);
+        countSkipped++;
+        continue;
+      }
+
+      const targetFilePath = path.join(targetFolder, newFileName);
+      await fs.rename(inputFilePath, targetFilePath);
+
+      logLines.push(`Moved: ${path.relative(INPUT_DIR, inputFilePath)} → ${path.relative(ROOT, targetFilePath)}`);
+      countMoved++;
+    } catch (err) {
+      errorLines.push(`Error: ${inputFilePath}\nReason: ${err.message}\n`);
     }
-
-    const targetFilePath = path.join(targetFolder, newFileName);
-    await fs.rename(inputFilePath, targetFilePath);
-
-    logLines.push(`Moved: ${path.relative(INPUT_DIR, inputFilePath)} → ${path.relative(ROOT, targetFilePath)}`);
-    countMoved++;
   }
 
   logLines.push(`\nTotal files moved: ${countMoved}`);
   logLines.push(`Total files skipped (identical): ${countSkipped}`);
+
   await fs.writeFile(LOG_FILE, logLines.join('\n'), 'utf8');
+  if (errorLines.length > 0) {
+    await fs.writeFile(ERROR_LOG_FILE, errorLines.join('\n'), 'utf8');
+    console.warn(`⚠️ Some files caused errors. See errorsLog.txt`);
+  }
 
   console.log(`✅ ${countMoved} file(s) moved, ${countSkipped} skipped. See log.txt for details.`);
 }
 
 organizeFilesByModifiedDate().catch(err => {
-  console.error('❌ Error organizing files:', err);
+  console.error('❌ Unexpected error:', err);
 });
+
+
+
