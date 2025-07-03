@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Distributor</title>
+    <style>
+      .side-labels {
+        font-size: 0.5em;
+      }
+      .side-panel {
+        margin-left: 16px;
+        min-width: 200px;
+      }
+      .button-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>File Distributor</h1>
+    <div style="display: flex; align-items: flex-start;">
+      <div class="button-stack">
+        <button id="add-files-btn">Add input folder</button>
+        <button id="output-folder-btn">Output folder</button>
+        <button id="distribute-btn" disabled>Distribute</button>
+      </div>
+      <div class="side-panel side-labels">
+        <h4>Input Folders</h4>
+        <ul id="input-list"></ul>
+        <h4>Output Folder</h4>
+        <div id="output-folder-name" style="word-break: break-all; color: #333;"></div>
+      </div>
+    </div>
+    <div style="margin: 12px 0;">
+      <progress id="progress-bar" value="0" max="100" style="width: 300px;"></progress>
+    </div>
+    <div>
+      <h3>Logs</h3>
+      <pre id="log-area" style="background: #eee; padding: 8px; height: 200px; overflow: auto;"></pre>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>
